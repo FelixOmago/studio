@@ -30,27 +30,29 @@ const getCoinGeckoId = (cryptoId: CryptoId) => {
     return CRYPTO_CURRENCIES.find(c => c.id === cryptoId)?.coingeckoId || 'bitcoin';
 }
 
-const getTimeRangeParameters = (timeRange: TimeRange): { days?: number, from?: number, to?: number } => {
+const getTimeRangeParameters = (timeRange: TimeRange): { days?: string, from?: number, to?: number } => {
     const now = new Date();
     const to = getUnixTime(now);
     switch(timeRange) {
         case '30m':
-            return { from: getUnixTime(sub(now, { minutes: 30 })), to: to };
+             return { from: getUnixTime(sub(now, { minutes: 30 })), to: to };
         case '1h':
-            return { from: getUnixTime(sub(now, { hours: 1 })), to: to };
+            return { from: getUnixTime(sub(now, { hours: 1 })), to: to, days: "1" };
         case '24h':
-            return { days: 1 };
+            return { days: "1" };
         case '7d':
-            return { days: 7 };
+            return { days: "7" };
         case '30d':
-            return { days: 30 };
+            return { days: "30" };
         case '1y':
-            return { days: 365 };
+            return { days: "365" };
         default:
-            return { days: 1 };
+            return { days: "1" };
     }
 }
 
+// Helper to delay execution
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 export const fetchCryptoData = async (
   cryptoId: CryptoId,
@@ -82,6 +84,9 @@ export const fetchCryptoData = async (
             };
         }
     }
+
+    // Add a small delay to avoid hitting API rate limits
+    await delay(500);
 
     // Fetch historical data for the selected crypto
     const timeParams = getTimeRangeParameters(timeRange);
