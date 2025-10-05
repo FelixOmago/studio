@@ -1,4 +1,4 @@
-import { sub, format } from "date-fns";
+import { sub, getUnixTime } from "date-fns";
 
 export type CryptoId = "BTC" | "ETH" | "SOL";
 export type TimeRange = "30m" | "1h" | "24h" | "7d" | "30d" | "1y";
@@ -18,125 +18,38 @@ export interface CryptoInfo {
   brl_24h_change: number;
 }
 
-export const CRYPTO_CURRENCIES: { id: CryptoId; name: string }[] = [
-  { id: "BTC", name: "Bitcoin" },
-  { id: "ETH", name: "Ethereum" },
-  { id: "SOL", name: "Solana" },
+export const CRYPTO_CURRENCIES: { id: CryptoId; name: string, coingeckoId: string }[] = [
+  { id: "BTC", name: "Bitcoin", coingeckoId: "bitcoin" },
+  { id: "ETH", name: "Ethereum", coingeckoId: "ethereum" },
+  { id: "SOL", name: "Solana", coingeckoId: "solana" },
 ];
 
-const BASE_PRICES: Record<CryptoId, number> = {
-  BTC: 656963 / 5.44, // Roughly 120765
-  ETH: 4515.59,
-  SOL: 165.51,
-};
+const COINGECKO_API_URL = "https://api.coingecko.com/api/v3";
 
-const VOLATILITY: Record<CryptoId, number> = {
-  BTC: 0.1,
-  ETH: 0.15,
-  SOL: 0.25,
-};
+const getCoinGeckoId = (cryptoId: CryptoId) => {
+    return CRYPTO_CURRENCIES.find(c => c.id === cryptoId)?.coingeckoId || 'bitcoin';
+}
 
-const USD_TO_BRL = 5.44;
-
-const generatePrice = (basePrice: number, volatility: number) => {
-  return basePrice * (1 + (Math.random() - 0.5) * volatility);
-};
-
-const generateChartData = (
-  cryptoId: CryptoId,
-  timeRange: TimeRange,
-  currency: Currency
-): CryptoDataPoint[] => {
-  const basePrice = BASE_PRICES[cryptoId] * (currency === "BRL" ? USD_TO_BRL : 1);
-  const cryptoVolatility = VOLATILITY[cryptoId];
-  const now = new Date();
-  let data: CryptoDataPoint[] = [];
-
-  switch (timeRange) {
-    case "30m": {
-      data = Array.from({ length: 30 }, (_, i) => {
-        const date = sub(now, { minutes: 29 - i });
-        return {
-          date: date.toISOString(),
-          price: generatePrice(basePrice, cryptoVolatility * 0.1),
-        };
-      });
-      break;
+const getTimeRangeParameters = (timeRange: TimeRange): { days?: number, from?: number, to?: number } => {
+    const now = new Date();
+    const to = getUnixTime(now);
+    switch(timeRange) {
+        case '30m':
+            return { from: getUnixTime(sub(now, { minutes: 30 })), to: to };
+        case '1h':
+            return { from: getUnixTime(sub(now, { hours: 1 })), to: to };
+        case '24h':
+            return { days: 1 };
+        case '7d':
+            return { days: 7 };
+        case '30d':
+            return { days: 30 };
+        case '1y':
+            return { days: 365 };
+        default:
+            return { days: 1 };
     }
-    case "1h": {
-      data = Array.from({ length: 60 }, (_, i) => {
-        const date = sub(now, { minutes: 59 - i });
-        return {
-          date: date.toISOString(),
-          price: generatePrice(basePrice, cryptoVolatility * 0.15),
-        };
-      });
-      break;
-    }
-    case "24h": {
-      data = Array.from({ length: 24 }, (_, i) => {
-        const date = sub(now, { hours: 23 - i });
-        return {
-          date: date.toISOString(),
-          price: generatePrice(basePrice, cryptoVolatility * 0.2),
-        };
-      });
-      break;
-    }
-    case "7d": {
-      data = Array.from({ length: 7 }, (_, i) => {
-        const date = sub(now, { days: 6 - i });
-        return {
-          date: date.toISOString(),
-          price: generatePrice(basePrice, cryptoVolatility * 0.5),
-        };
-      });
-      break;
-    }
-    case "30d": {
-      data = Array.from({ length: 30 }, (_, i) => {
-        const date = sub(now, { days: 29 - i });
-        return {
-          date: date.toISOString(),
-          price: generatePrice(basePrice, cryptoVolatility),
-        };
-      });
-      break;
-    }
-    case "1y": {
-      data = Array.from({ length: 12 }, (_, i) => {
-        const date = sub(now, { months: 11 - i });
-        const monthPrice = generatePrice(basePrice * (1 + (i-6)*0.1), cryptoVolatility * 2);
-        return {
-          date: date.toISOString(),
-          price: monthPrice > 0 ? monthPrice : basePrice * 0.1,
-        };
-      });
-      break;
-    }
-  }
-  return data;
-};
-
-const generateCryptoInfo = (): Record<CryptoId, CryptoInfo> => {
-    const info: Record<CryptoId, CryptoInfo> = {} as Record<CryptoId, CryptoInfo>;
-    for (const crypto of CRYPTO_CURRENCIES) {
-        const usdPrice = generatePrice(BASE_PRICES[crypto.id], VOLATILITY[crypto.id] * 0.05);
-        const brlPrice = usdPrice * USD_TO_BRL;
-        const usdChange = (Math.random() - 0.45) * 5; // % change
-        const brlChange = usdChange + (Math.random() - 0.5) * 0.1;
-
-        info[crypto.id] = {
-            id: crypto.id,
-            name: crypto.name,
-            usd: usdPrice,
-            brl: brlPrice,
-            usd_24h_change: usdChange,
-            brl_24h_change: brlChange,
-        };
-    }
-    return info;
-};
+}
 
 
 export const fetchCryptoData = async (
@@ -144,11 +57,59 @@ export const fetchCryptoData = async (
   timeRange: TimeRange,
   currency: Currency
 ): Promise<{ info: Record<CryptoId, CryptoInfo>; history: CryptoDataPoint[] }> => {
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 500 + Math.random() * 500));
+  const coingeckoIds = CRYPTO_CURRENCIES.map(c => c.coingeckoId).join(',');
+  const selectedCoingeckoId = getCoinGeckoId(cryptoId);
+  const vsCurrencies = "usd,brl";
 
-  const info = generateCryptoInfo();
-  const history = generateChartData(cryptoId, timeRange, currency);
+  try {
+    // Fetch current prices and 24h change for all cryptos
+    const infoUrl = `${COINGECKO_API_URL}/simple/price?ids=${coingeckoIds}&vs_currencies=${vsCurrencies}&include_24hr_change=true`;
+    const infoResponse = await fetch(infoUrl);
+    if (!infoResponse.ok) throw new Error(`Failed to fetch price data from CoinGecko: ${infoResponse.statusText}`);
+    const infoData = await infoResponse.json();
+    
+    const info: Record<CryptoId, CryptoInfo> = {} as Record<CryptoId, CryptoInfo>;
+    for (const crypto of CRYPTO_CURRENCIES) {
+        const data = infoData[crypto.coingeckoId];
+        if (data) {
+            info[crypto.id] = {
+                id: crypto.id,
+                name: crypto.name,
+                usd: data.usd,
+                brl: data.brl,
+                usd_24h_change: data.usd_24h_change,
+                brl_24h_change: data.brl_24h_change,
+            };
+        }
+    }
 
-  return { info, history };
+    // Fetch historical data for the selected crypto
+    const timeParams = getTimeRangeParameters(timeRange);
+    let historyUrl: string;
+
+    if (timeRange === '30m' || timeRange === '1h') {
+        historyUrl = `${COINGECKO_API_URL}/coins/${selectedCoingeckoId}/market_chart/range?vs_currency=${currency.toLowerCase()}&from=${timeParams.from}&to=${timeParams.to}`;
+    } else {
+        historyUrl = `${COINGECKO_API_URL}/coins/${selectedCoingeckoId}/market_chart?vs_currency=${currency.toLowerCase()}&days=${timeParams.days}`;
+    }
+    
+    const historyResponse = await fetch(historyUrl);
+    if (!historyResponse.ok) throw new Error(`Failed to fetch historical data from CoinGecko: ${historyResponse.statusText}`);
+    const historyData = await historyResponse.json();
+
+    const history: CryptoDataPoint[] = historyData.prices.map((p: [number, number]) => ({
+      date: new Date(p[0]).toISOString(),
+      price: p[1],
+    }));
+
+    return { info, history };
+
+  } catch (error) {
+    console.error("Error fetching data from CoinGecko:", error);
+    // Return empty/default state in case of an API error to avoid crashing the app
+    return {
+      info: {} as Record<CryptoId, CryptoInfo>,
+      history: [],
+    };
+  }
 };
