@@ -77,7 +77,12 @@ export function CryptoChart({ data, currency, cryptoId }: CryptoChartProps) {
           tickLine={false}
           axisLine={false}
           tickMargin={8}
-          tickFormatter={(value) => `${currencySymbol}${value / 1000}k`}
+          tickFormatter={(value) => {
+            if (value >= 1000) {
+              return `${currencySymbol}${(value / 1000).toFixed(0)}k`;
+            }
+            return `${currencySymbol}${value}`;
+          }}
         />
         <Tooltip
           cursor={false}
