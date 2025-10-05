@@ -1,7 +1,7 @@
 import { sub, format } from "date-fns";
 
 export type CryptoId = "BTC" | "ETH" | "SOL";
-export type TimeRange = "24h" | "7d" | "30d" | "1y";
+export type TimeRange = "30m" | "1h" | "24h" | "7d" | "30d" | "1y";
 export type Currency = "USD" | "BRL";
 
 export interface CryptoDataPoint {
@@ -25,8 +25,8 @@ export const CRYPTO_CURRENCIES: { id: CryptoId; name: string }[] = [
 ];
 
 const BASE_PRICES: Record<CryptoId, number> = {
-  BTC: 125000,
-  ETH: 3800,
+  BTC: 656963 / 5.44, // Roughly 120765
+  ETH: 3500,
   SOL: 165,
 };
 
@@ -53,6 +53,26 @@ const generateChartData = (
   let data: CryptoDataPoint[] = [];
 
   switch (timeRange) {
+    case "30m": {
+      data = Array.from({ length: 30 }, (_, i) => {
+        const date = sub(now, { minutes: 29 - i });
+        return {
+          date: date.toISOString(),
+          price: generatePrice(basePrice, cryptoVolatility * 0.1),
+        };
+      });
+      break;
+    }
+    case "1h": {
+      data = Array.from({ length: 60 }, (_, i) => {
+        const date = sub(now, { minutes: 59 - i });
+        return {
+          date: date.toISOString(),
+          price: generatePrice(basePrice, cryptoVolatility * 0.15),
+        };
+      });
+      break;
+    }
     case "24h": {
       data = Array.from({ length: 24 }, (_, i) => {
         const date = sub(now, { hours: 23 - i });

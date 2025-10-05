@@ -39,6 +39,8 @@ const ICONS: Record<CryptoId, React.ElementType> = {
 };
 
 const TIME_RANGES: { value: TimeRange; label: string }[] = [
+  { value: "30m", label: "30 Min" },
+  { value: "1h", label: "1 Hora" },
   { value: "24h", label: "24 Horas" },
   { value: "7d", label: "7 Dias" },
   { value: "30d", label: "1 Mês" },
@@ -137,7 +139,7 @@ export default function CryptoDashboard() {
         <Card>
           <CardHeader>
             <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <Tabs value={selectedCurrency} onValueChange={(v) => setSelectedCurrency(v as Currency)}>
                   <TabsList>
                     <TabsTrigger value="USD">USD</TabsTrigger>
@@ -145,7 +147,7 @@ export default function CryptoDashboard() {
                   </TabsList>
                 </Tabs>
                 <Tabs value={selectedTimeRange} onValueChange={(v) => setSelectedTimeRange(v as TimeRange)}>
-                  <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4 h-full">
+                  <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 h-full">
                     {TIME_RANGES.map((range) => (
                       <TabsTrigger key={range.value} value={range.value}>
                         {range.label}

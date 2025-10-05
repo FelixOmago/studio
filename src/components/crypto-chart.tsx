@@ -64,13 +64,20 @@ export function CryptoChart({ data, currency, cryptoId }: CryptoChartProps) {
           tickMargin={8}
           tickFormatter={(value) => {
             const date = new Date(value);
-            if (data.length > 31) { // 1 year
+            if (data.length > 60) { // 1 year
                return date.toLocaleDateString("default", { month: 'short' });
             }
-            if(data.length > 7){ // 30 days
+            if(data.length > 30){ // 1h
+                const minutes = date.getMinutes();
+                return minutes % 15 === 0 ? date.toLocaleTimeString("default", { hour: '2-digit', minute:'2-digit' }) : '';
+            }
+            if(data.length > 7){ // 30m, 30d
                 return date.toLocaleDateString("default", { day: 'numeric' });
             }
-            return date.toLocaleDateString("default", { weekday: 'short' }); // 7 days or 24h
+            if(data.length > 1) { // 7 days or 24h
+              return date.toLocaleDateString("default", { weekday: 'short' }); 
+            }
+            return date.toLocaleTimeString("default", { hour: '2-digit', minute:'2-digit' });
           }}
         />
         <YAxis
@@ -78,10 +85,13 @@ export function CryptoChart({ data, currency, cryptoId }: CryptoChartProps) {
           axisLine={false}
           tickMargin={8}
           tickFormatter={(value) => {
+            if (value >= 1000000) {
+              return `${currencySymbol}${(value / 1000000).toFixed(1)}M`;
+            }
             if (value >= 1000) {
               return `${currencySymbol}${(value / 1000).toFixed(0)}k`;
             }
-            return `${currencySymbol}${value}`;
+            return `${currencySymbol}${value.toFixed(0)}`;
           }}
         />
         <Tooltip
@@ -92,11 +102,18 @@ export function CryptoChart({ data, currency, cryptoId }: CryptoChartProps) {
               labelFormatter={(label, payload) => {
                  const dataPoint = payload[0]?.payload;
                  if (dataPoint) {
-                   return new Date(dataPoint.date).toLocaleDateString("default", {
-                     year: 'numeric',
-                     month: 'long',
-                     day: 'numeric',
-                   })
+                    const date = new Date(dataPoint.date);
+                    if (data.length <= 60) { // 30m, 1h
+                      return date.toLocaleTimeString("default", {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      });
+                    }
+                    return date.toLocaleDateString("default", {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric',
+                    })
                  }
                  return label;
               }}
