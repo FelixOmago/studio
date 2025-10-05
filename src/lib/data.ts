@@ -27,7 +27,7 @@ export const CRYPTO_CURRENCIES: { id: CryptoId; name: string }[] = [
 const BASE_PRICES: Record<CryptoId, number> = {
   BTC: 656963 / 5.44, // Roughly 120765
   ETH: 3500,
-  SOL: 165,
+  SOL: 228.40,
 };
 
 const VOLATILITY: Record<CryptoId, number> = {
