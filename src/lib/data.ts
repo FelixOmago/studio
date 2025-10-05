@@ -25,7 +25,7 @@ export const CRYPTO_CURRENCIES: { id: CryptoId; name: string }[] = [
 ];
 
 const BASE_PRICES: Record<CryptoId, number> = {
-  BTC: 68000,
+  BTC: 125000,
   ETH: 3800,
   SOL: 165,
 };
@@ -36,7 +36,7 @@ const VOLATILITY: Record<CryptoId, number> = {
   SOL: 0.25,
 };
 
-const USD_TO_BRL = 5.25;
+const USD_TO_BRL = 5.44;
 
 const generatePrice = (basePrice: number, volatility: number) => {
   return basePrice * (1 + (Math.random() - 0.5) * volatility);
