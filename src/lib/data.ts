@@ -37,7 +37,7 @@ const getTimeRangeParameters = (timeRange: TimeRange): { days?: string, from?: n
         case '30m':
              return { from: getUnixTime(sub(now, { minutes: 30 })), to: to };
         case '1h':
-            return { from: getUnixTime(sub(now, { hours: 1 })), to: to, days: "1" };
+            return { from: getUnixTime(sub(now, { hours: 1 })), to: to };
         case '24h':
             return { days: "1" };
         case '7d':
@@ -51,8 +51,33 @@ const getTimeRangeParameters = (timeRange: TimeRange): { days?: string, from?: n
     }
 }
 
-// Helper to delay execution
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+// Helper to delay execution and implement retry logic
+const fetchWithRetry = async (url: string, retries = 3, delayMs = 1000): Promise<Response> => {
+    for (let i = 0; i < retries; i++) {
+        try {
+            const response = await fetch(url);
+            if (response.ok) {
+                return response;
+            }
+            // If response is not ok, but not a network error, we might not want to retry,
+            // but for CoinGecko's rate limiting (429), retrying is useful.
+            if (response.status === 429) {
+                 console.warn(`Rate limited. Retrying in ${delayMs * (i + 1)}ms...`);
+                 await new Promise(resolve => setTimeout(resolve, delayMs * (i + 1)));
+                 continue;
+            }
+        } catch (error) {
+            console.warn(`Fetch attempt ${i + 1} failed for ${url}. Retrying...`, error);
+            if (i < retries - 1) {
+                await new Promise(resolve => setTimeout(resolve, delayMs * (i + 1)));
+            } else {
+                throw error; // Rethrow error after last attempt
+            }
+        }
+    }
+    throw new Error(`Failed to fetch from ${url} after ${retries} attempts`);
+};
+
 
 export const fetchCryptoData = async (
   cryptoId: CryptoId,
@@ -66,7 +91,7 @@ export const fetchCryptoData = async (
   try {
     // Fetch current prices and 24h change for all cryptos
     const infoUrl = `${COINGECKO_API_URL}/simple/price?ids=${coingeckoIds}&vs_currencies=${vsCurrencies}&include_24hr_change=true`;
-    const infoResponse = await fetch(infoUrl);
+    const infoResponse = await fetchWithRetry(infoUrl);
     if (!infoResponse.ok) throw new Error(`Failed to fetch price data from CoinGecko: ${infoResponse.statusText}`);
     const infoData = await infoResponse.json();
     
@@ -85,9 +110,6 @@ export const fetchCryptoData = async (
         }
     }
 
-    // Add a small delay to avoid hitting API rate limits
-    await delay(500);
-
     // Fetch historical data for the selected crypto
     const timeParams = getTimeRangeParameters(timeRange);
     let historyUrl: string;
@@ -98,7 +120,7 @@ export const fetchCryptoData = async (
         historyUrl = `${COINGECKO_API_URL}/coins/${selectedCoingeckoId}/market_chart?vs_currency=${currency.toLowerCase()}&days=${timeParams.days}`;
     }
     
-    const historyResponse = await fetch(historyUrl);
+    const historyResponse = await fetchWithRetry(historyUrl);
     if (!historyResponse.ok) throw new Error(`Failed to fetch historical data from CoinGecko: ${historyResponse.statusText}`);
     const historyData = await historyResponse.json();
 
