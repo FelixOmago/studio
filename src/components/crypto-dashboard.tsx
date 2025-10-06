@@ -31,6 +31,7 @@ import {
 import { SolanaIcon } from "./icons/solana";
 import { EthereumIcon } from "./icons/ethereum";
 import { SquaraLogo } from "./icons/squara-logo";
+import { ThemeToggle } from "./theme-toggle";
 
 const ICONS: Record<CryptoId, React.ElementType> = {
   BTC: Bitcoin,
@@ -86,6 +87,9 @@ export default function CryptoDashboard() {
         <div className="flex items-center gap-2 text-lg font-semibold text-primary">
           <SquaraLogo className="h-6 w-6" />
           <h1>Squara</h1>
+        </div>
+        <div className="ml-auto">
+            <ThemeToggle />
         </div>
       </header>
       <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
