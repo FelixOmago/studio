@@ -174,7 +174,7 @@ export default function CryptoDashboard() {
                 <Skeleton className="h-full w-full" />
               </div>
             ) : (
-              <CryptoChart data={chartData} currency={selectedCurrency} cryptoId={selectedCrypto} />
+              <CryptoChart data={chartData} currency={selectedCurrency} cryptoId={selectedCrypto} timeRange={selectedTimeRange} />
             )}
           </CardContent>
         </Card>

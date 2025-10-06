@@ -8,12 +8,13 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart";
 import type { ChartConfig } from "@/components/ui/chart";
-import type { CryptoDataPoint, Currency } from "@/lib/data";
+import type { CryptoDataPoint, Currency, TimeRange } from "@/lib/data";
 
 interface CryptoChartProps {
   data: CryptoDataPoint[];
   currency: Currency;
   cryptoId: string;
+  timeRange: TimeRange;
 }
 
 const chartConfig = {
@@ -34,7 +35,7 @@ const chartConfig = {
   },
 } satisfies ChartConfig;
 
-export function CryptoChart({ data, currency, cryptoId }: CryptoChartProps) {
+export function CryptoChart({ data, currency, cryptoId, timeRange }: CryptoChartProps) {
   const currencyFormatter = new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: currency,
@@ -43,6 +44,51 @@ export function CryptoChart({ data, currency, cryptoId }: CryptoChartProps) {
   });
 
   const currencySymbol = currency === "BRL" ? "R$" : "$";
+
+  const formatTick = (value: string) => {
+    const date = new Date(value);
+    switch (timeRange) {
+      case '30m':
+      case '1h':
+        return date.toLocaleTimeString("default", { hour: '2-digit', minute:'2-digit' });
+      case '24h':
+      case '7d':
+        return date.toLocaleDateString("default", { weekday: 'short' });
+      case '30d':
+        return date.toLocaleDateString("default", { day: 'numeric' });
+      case '1y':
+        return date.toLocaleDateString("default", { month: 'short' });
+      default:
+        return date.toLocaleDateString("default");
+    }
+  }
+
+  const formatTooltipLabel = (label: string, payload: any) => {
+    const dataPoint = payload[0]?.payload;
+    if (dataPoint) {
+      const date = new Date(dataPoint.date);
+      switch (timeRange) {
+        case '30m':
+        case '1h':
+        case '24h':
+          return date.toLocaleTimeString("default", {
+            hour: '2-digit',
+            minute: '2-digit',
+          });
+        case '7d':
+        case '30d':
+        case '1y':
+          return date.toLocaleDateString("default", {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+          });
+        default:
+          return label;
+      }
+    }
+    return label;
+  }
 
   return (
     <ChartContainer config={chartConfig} className="h-[250px] w-full sm:h-[400px]">
@@ -62,23 +108,7 @@ export function CryptoChart({ data, currency, cryptoId }: CryptoChartProps) {
           tickLine={false}
           axisLine={false}
           tickMargin={8}
-          tickFormatter={(value) => {
-            const date = new Date(value);
-            if (data.length > 60) { // 1 year
-               return date.toLocaleDateString("default", { month: 'short' });
-            }
-            if(data.length > 30){ // 1h
-                const minutes = date.getMinutes();
-                return minutes % 15 === 0 ? date.toLocaleTimeString("default", { hour: '2-digit', minute:'2-digit' }) : '';
-            }
-            if(data.length > 7){ // 30m, 30d
-                return date.toLocaleDateString("default", { day: 'numeric' });
-            }
-            if(data.length > 1) { // 7 days or 24h
-              return date.toLocaleDateString("default", { weekday: 'short' }); 
-            }
-            return date.toLocaleTimeString("default", { hour: '2-digit', minute:'2-digit' });
-          }}
+          tickFormatter={formatTick}
         />
         <YAxis
           tickLine={false}
@@ -99,24 +129,7 @@ export function CryptoChart({ data, currency, cryptoId }: CryptoChartProps) {
           content={
             <ChartTooltipContent
               indicator="line"
-              labelFormatter={(label, payload) => {
-                 const dataPoint = payload[0]?.payload;
-                 if (dataPoint) {
-                    const date = new Date(dataPoint.date);
-                    if (data.length <= 60) { // 30m, 1h
-                      return date.toLocaleTimeString("default", {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      });
-                    }
-                    return date.toLocaleDateString("default", {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric',
-                    })
-                 }
-                 return label;
-              }}
+              labelFormatter={formatTooltipLabel}
               formatter={(value) => currencyFormatter.format(value as number)}
             />
           }
