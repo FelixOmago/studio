@@ -53,29 +53,30 @@ const getTimeRangeParameters = (timeRange: TimeRange): { days?: string, from?: n
 
 // Helper to delay execution and implement retry logic
 const fetchWithRetry = async (url: string, retries = 3, delayMs = 1000): Promise<Response> => {
+    let lastError: Error | undefined;
     for (let i = 0; i < retries; i++) {
         try {
             const response = await fetch(url);
             if (response.ok) {
                 return response;
             }
-            // If response is not ok, but not a network error, we might not want to retry,
-            // but for CoinGecko's rate limiting (429), retrying is useful.
             if (response.status === 429) {
                  console.warn(`Rate limited. Retrying in ${delayMs * (i + 1)}ms...`);
                  await new Promise(resolve => setTimeout(resolve, delayMs * (i + 1)));
                  continue;
             }
+            // For other non-ok statuses, throw an error to be caught and retried
+            lastError = new Error(`HTTP error! status: ${response.status}`);
         } catch (error) {
             console.warn(`Fetch attempt ${i + 1} failed for ${url}. Retrying...`, error);
+            lastError = error as Error;
             if (i < retries - 1) {
                 await new Promise(resolve => setTimeout(resolve, delayMs * (i + 1)));
-            } else {
-                throw error; // Rethrow error after last attempt
             }
         }
     }
-    throw new Error(`Failed to fetch from ${url} after ${retries} attempts`);
+    // If all retries fail, throw the last encountered error
+    throw lastError || new Error(`Failed to fetch from ${url} after ${retries} attempts`);
 };
 
 
