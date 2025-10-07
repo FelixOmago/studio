@@ -21,9 +21,9 @@ const AnalyzeCryptoInputSchema = z.object({
 export type AnalyzeCryptoInput = z.infer<typeof AnalyzeCryptoInputSchema>;
 
 const AnalyzeCryptoOutputSchema = z.object({
-  sentiment: z.string().describe("The current market sentiment (e.g., 'Bullish', 'Bearish', 'Neutral')."),
-  trend_prediction: z.string().describe("A short-term trend prediction (e.g., 'Upward Trend', 'Downward Trend', 'Sideways Movement')."),
-  summary: z.string().describe('A concise summary explaining the current situation and potential factors influencing the price.'),
+  sentiment: z.string().describe("O sentimento atual do mercado (ex: 'Otimista', 'Pessimista', 'Neutro')."),
+  trend_prediction: z.string().describe("Uma previsão de tendência de curto prazo (ex: 'Tendência de Alta', 'Tendência de Baixa', 'Movimento Lateral')."),
+  summary: z.string().describe('Um resumo conciso explicando a situação atual e os possíveis fatores que influenciam o preço.'),
 });
 export type AnalyzeCryptoOutput = z.infer<typeof AnalyzeCryptoOutputSchema>;
 
@@ -38,16 +38,16 @@ const prompt = ai.definePrompt({
   name: 'analyzeCryptoPrompt',
   input: { schema: AnalyzeCryptoInputSchema },
   output: { schema: AnalyzeCryptoOutputSchema },
-  prompt: `You are an expert financial analyst specializing in cryptocurrency.
-Your task is to analyze the provided data for {{cryptoName}} and generate a concise report.
-Based on the recent price history, determine the market sentiment, predict the short-term trend, and provide a summary of your analysis.
+  prompt: `Você é um analista financeiro especialista em criptomoedas.
+Sua tarefa é analisar os dados fornecidos para {{cryptoName}} e gerar um relatório conciso em português.
+Com base no histórico de preços recente, determine o sentimento do mercado, preveja a tendência de curto prazo e forneça um resumo de sua análise.
 
-Price History:
+Histórico de Preços:
 {{#each priceHistory}}
-- Date: {{date}}, Price: {{price}}
+- Data: {{date}}, Preço: {{price}}
 {{/each}}
 
-Provide your analysis in the structured format requested.`,
+Forneça sua análise no formato estruturado solicitado, em português.`,
 });
 
 const analyzeCryptoFlow = ai.defineFlow(
