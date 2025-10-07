@@ -10,6 +10,20 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 export const metadata: Metadata = {
   title: "Squara: CryptoTracker",
   description: "Rastreie os valores de Bitcoin, Solana e Ethereum em tempo real.",
+  openGraph: {
+    title: "Squara: CryptoTracker",
+    description: "Rastreie os valores de Bitcoin, Solana e Ethereum em tempo real.",
+    images: [
+      {
+        url: "https://images.unsplash.com/photo-1621419213442-3a339fd948ce?q=80&w=1200",
+        width: 1200,
+        height: 630,
+        alt: "Painel de Criptomoedas",
+      },
+    ],
+    locale: "pt_BR",
+    type: "website",
+  },
 };
 
 export default function RootLayout({
