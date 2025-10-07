@@ -6,6 +6,8 @@ import {
   ArrowUp,
   Bitcoin,
   RefreshCw,
+  Sparkles,
+  LoaderCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,6 +17,14 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
@@ -32,6 +42,8 @@ import { SolanaIcon } from "./icons/solana";
 import { EthereumIcon } from "./icons/ethereum";
 import { SquaraLogo } from "./icons/squara-logo";
 import { ThemeToggle } from "./theme-toggle";
+import { analyzeCrypto, type AnalyzeCryptoOutput } from "@/ai/flows/analyze-crypto-flow";
+import { useToast } from "@/hooks/use-toast";
 
 const ICONS: Record<CryptoId, React.ElementType> = {
   BTC: Bitcoin,
@@ -49,12 +61,18 @@ const TIME_RANGES: { value: TimeRange; label: string }[] = [
 ];
 
 export default function CryptoDashboard() {
+  const { toast } = useToast();
   const [selectedCrypto, setSelectedCrypto] = React.useState<CryptoId>("BTC");
   const [selectedTimeRange, setSelectedTimeRange] = React.useState<TimeRange>("24h");
   const [selectedCurrency, setSelectedCurrency] = React.useState<Currency>("USD");
   const [cryptoInfo, setCryptoInfo] = React.useState<Record<CryptoId, CryptoInfo> | null>(null);
   const [chartData, setChartData] = React.useState<CryptoDataPoint[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
+  
+  const [isAnalyzing, setIsAnalyzing] = React.useState(false);
+  const [analysisResult, setAnalysisResult] = React.useState<AnalyzeCryptoOutput | null>(null);
+  const [isAnalysisDialogOpen, setIsAnalysisDialogOpen] = React.useState(false);
+
 
   const fetchData = React.useCallback(async () => {
     setIsLoading(true);
@@ -64,10 +82,15 @@ export default function CryptoDashboard() {
       setChartData(data.history);
     } catch (error) {
       console.error("Failed to fetch crypto data", error);
+      toast({
+        title: "Erro ao buscar dados",
+        description: "Não foi possível carregar os dados das criptomoedas. Tente novamente mais tarde.",
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
-  }, [selectedCrypto, selectedTimeRange, selectedCurrency]);
+  }, [selectedCrypto, selectedTimeRange, selectedCurrency, toast]);
 
   React.useEffect(() => {
     fetchData();
@@ -77,9 +100,36 @@ export default function CryptoDashboard() {
     fetchData();
   };
 
+  const handleAnalysis = async () => {
+    if (!chartData.length) {
+      toast({
+        title: "Dados insuficientes",
+        description: "Não há dados históricos para analisar.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setIsAnalyzing(true);
+    try {
+      const result = await analyzeCrypto({
+        cryptoName: CRYPTO_CURRENCIES.find(c => c.id === selectedCrypto)?.name || selectedCrypto,
+        priceHistory: chartData,
+      });
+      setAnalysisResult(result);
+      setIsAnalysisDialogOpen(true);
+    } catch (error) {
+      console.error("Failed to analyze crypto data", error);
+      toast({
+        title: "Erro na Análise",
+        description: "A análise de IA falhou. Por favor, tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
   const currentCryptoInfo = cryptoInfo?.[selectedCrypto];
-  const price = currentCryptoInfo?.[selectedCurrency.toLowerCase() as "usd" | "brl"] ?? 0;
-  const change = currentCryptoInfo?.[`${selectedCurrency.toLowerCase()}_24h_change` as "usd_24h_change" | "brl_24h_change"] ?? 0;
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-background">
@@ -160,12 +210,20 @@ export default function CryptoDashboard() {
                   </TabsList>
                 </Tabs>
               </div>
-              <Button size="sm" variant="outline" className="h-8 gap-1" onClick={handleRefresh}>
-                <RefreshCw className="h-3.5 w-3.5" />
-                <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                  Atualizar
-                </span>
-              </Button>
+              <div className="flex gap-2">
+                <Button size="sm" variant="outline" className="h-8 gap-1" onClick={handleRefresh}>
+                  <RefreshCw className="h-3.5 w-3.5" />
+                  <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+                    Atualizar
+                  </span>
+                </Button>
+                 <Button size="sm" variant="outline" className="h-8 gap-1" onClick={handleAnalysis} disabled={isAnalyzing}>
+                  {isAnalyzing ? <LoaderCircle className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                  <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+                    Analisar com IA
+                  </span>
+                </Button>
+              </div>
             </div>
           </CardHeader>
           <CardContent className="pl-2">
@@ -179,6 +237,45 @@ export default function CryptoDashboard() {
           </CardContent>
         </Card>
       </main>
+
+       <Dialog open={isAnalysisDialogOpen} onOpenChange={setIsAnalysisDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-primary" />
+              Análise de IA para {CRYPTO_CURRENCIES.find(c => c.id === selectedCrypto)?.name}
+            </DialogTitle>
+            <DialogDescription>
+              Esta é uma análise gerada por inteligência artificial com base nos dados recentes. Não é um conselho financeiro.
+            </DialogDescription>
+          </DialogHeader>
+          {analysisResult ? (
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-3 items-center gap-4">
+                  <h3 className="font-semibold text-right col-span-1">Sentimento</h3>
+                  <p className="col-span-2">{analysisResult.sentiment}</p>
+              </div>
+               <div className="grid grid-cols-3 items-center gap-4">
+                  <h3 className="font-semibold text-right col-span-1">Previsão</h3>
+                  <p className="col-span-2">{analysisResult.trend_prediction}</p>
+              </div>
+               <div className="grid grid-cols-1 items-center gap-2">
+                  <h3 className="font-semibold">Resumo</h3>
+                  <p className="text-sm text-muted-foreground">{analysisResult.summary}</p>
+              </div>
+            </div>
+          ) : (
+            <div className="flex justify-center items-center h-24">
+              <LoaderCircle className="animate-spin" />
+            </div>
+          )}
+          <DialogFooter>
+            <Button type="button" variant="secondary" onClick={() => setIsAnalysisDialogOpen(false)}>
+              Fechar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
