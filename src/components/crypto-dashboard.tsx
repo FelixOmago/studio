@@ -250,18 +250,18 @@ export default function CryptoDashboard() {
             </DialogDescription>
           </DialogHeader>
           {analysisResult ? (
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-3 items-center gap-4">
-                  <h3 className="font-semibold text-right col-span-1">Sentimento</h3>
-                  <p className="col-span-2">{analysisResult.sentiment}</p>
+            <div className="space-y-4 py-4 text-sm">
+              <div>
+                  <h3 className="font-semibold text-muted-foreground">Sentimento do Mercado</h3>
+                  <p>{analysisResult.sentiment}</p>
               </div>
-               <div className="grid grid-cols-3 items-center gap-4">
-                  <h3 className="font-semibold text-right col-span-1">Previsão</h3>
-                  <p className="col-span-2">{analysisResult.trend_prediction}</p>
+               <div>
+                  <h3 className="font-semibold text-muted-foreground">Previsão de Tendência</h3>
+                  <p>{analysisResult.trend_prediction}</p>
               </div>
-               <div className="grid grid-cols-1 items-center gap-2">
-                  <h3 className="font-semibold">Resumo</h3>
-                  <p className="text-sm text-muted-foreground">{analysisResult.summary}</p>
+               <div>
+                  <h3 className="font-semibold text-muted-foreground">Resumo da Análise</h3>
+                  <p className="text-sm">{analysisResult.summary}</p>
               </div>
             </div>
           ) : (
