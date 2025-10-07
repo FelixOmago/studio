@@ -10,6 +10,7 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 export const metadata: Metadata = {
   title: "Squara: CryptoTracker",
   description: "Rastreie os valores de Bitcoin, Solana e Ethereum em tempo real.",
+  manifest: "/manifest.webmanifest",
   openGraph: {
     title: "Squara: CryptoTracker",
     description: "Rastreie os valores de Bitcoin, Solana e Ethereum em tempo real.",
@@ -37,6 +38,7 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+        <link rel="apple-touch-icon" href="/icon.png" />
       </head>
       <body
         className={cn(
