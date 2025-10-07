@@ -15,7 +15,7 @@ export const metadata: Metadata = {
     description: "Rastreie os valores de Bitcoin, Solana e Ethereum em tempo real.",
     images: [
       {
-        url: "https://i.ibb.co/b3x1Y3B/squara-og-image.png",
+        url: "https://i.ibb.co/3mGr04FB/squaralogo.png",
         width: 1200,
         height: 630,
         alt: "Squara CryptoTracker",
