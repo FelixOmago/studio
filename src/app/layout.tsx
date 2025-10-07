@@ -10,7 +10,6 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 export const metadata: Metadata = {
   title: "Squara: CryptoTracker",
   description: "Rastreie os valores de Bitcoin, Solana e Ethereum em tempo real.",
-  manifest: "/manifest.webmanifest",
   openGraph: {
     title: "Squara: CryptoTracker",
     description: "Rastreie os valores de Bitcoin, Solana e Ethereum em tempo real.",
